@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch --all --prune)",
+      "Bash(git rev-parse --git-dir)",
+      "Bash(uv --version)",
+      "Bash(uv venv)",
+      "Bash(source .venv/Scripts/activate)",
+      "Bash(uv pip install cohere qdrant-client requests beautifulsoup4 python-dotenv)"
+    ]
+  }
+}

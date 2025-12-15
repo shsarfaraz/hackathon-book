@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .chat-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            text-align: right;
+        }
+        .bot-message {
+            background-color: #f5f5f5;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+        #message-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #send-button {
+            padding: 10px 20px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #send-button:disabled {
+            background-color: #bbdefb;
+            cursor: not-allowed;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .source {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>RAG Document Query Chatbot</h1>
+    <div class="chat-container" id="chat-container">
+        <div class="message bot-message">
+            Hello! I'm your RAG chatbot. I can answer questions based on the documents in our knowledge base. How can I help you today?
+        </div>
+    </div>
+    <div class="input-container">
+        <input type="text" id="message-input" placeholder="Type your message here..." onkeypress="handleKeyPress(event)">
+        <button id="send-button" onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api';
+        let conversationId = null;
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Add user message to chat
+            addMessageToChat(message, 'user');
+            input.value = '';
+
+            // Disable input while waiting for response
+            input.disabled = true;
+            document.getElementById('send-button').disabled = true;
+
+            try {
+                // Add loading message
+                const loadingId = 'loading-' + Date.now();
+                addMessageToChat('<span class="loading">Thinking...</span>', 'bot', loadingId);
+
+                // Send message to backend
+                const response = await fetch(`${API_BASE_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        conversation_id: conversationId
+                    })
+                });
+
+                const data = await response.json();
+
+                // Remove loading message
+                document.getElementById(loadingId).remove();
+
+                // Update conversation ID
+                if (data.conversation_id && !conversationId) {
+                    conversationId = data.conversation_id;
+                }
+
+                // Add bot response to chat
+                addMessageToChat(data.response, 'bot');
+
+                // Add sources if available
+                if (data.sources && data.sources.length > 0) {
+                    const sourcesDiv = document.createElement('div');
+                    sourcesDiv.className = 'source';
+                    sourcesDiv.innerHTML = '<strong>Sources:</strong><br>' +
+                        data.sources.slice(0, 3).map(src =>
+                            `- Doc: ${src.document_id.substring(0, 8)}... (Score: ${(src.similarity_score * 100).toFixed(1)}%)`
+                        ).join('<br>');
+                    document.getElementById('chat-container').lastChild.appendChild(sourcesDiv);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                // Remove loading message
+                document.getElementById(loadingId).remove();
+                addMessageToChat('Sorry, I encountered an error. Please try again.', 'bot');
+            } finally {
+                // Re-enable input
+                input.disabled = false;
+                document.getElementById('send-button').disabled = false;
+                input.focus();
+            }
+        }
+
+        function addMessageToChat(message, sender, id = null) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            if (id) messageDiv.id = id;
+            messageDiv.innerHTML = message;
+            chatContainer.appendChild(messageDiv);
+
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Focus on input when page loads
+        document.getElementById('message-input').focus();
+    </script>
+</body>
+</html>
