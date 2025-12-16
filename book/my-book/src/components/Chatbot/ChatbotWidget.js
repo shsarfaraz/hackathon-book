@@ -46,8 +46,8 @@ const ChatbotWidget = ({
 
     try {
       // Call backend API
-      const response = await fetch('http://localhost:8000/api/chat', {
-      // const response = await fetch('https://hackathon-backend.vercel.app/api/chat', {
+      // const response = await fetch('http://localhost:8000/api/chat', {
+      const response = await fetch('https://shsarfaraz.pythonanywhere.com/api/chat', {
 
         method: 'POST',
         headers: {

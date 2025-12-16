@@ -1055,6 +1055,12 @@ async def root():
     """
     return {"message": "RAG Chat API is running", "version": "1.0.0"}
 
+# For WSGI compatibility (like PythonAnywhere)
+try:
+    application = app
+except:
+    pass
+
 if __name__ == "__main__":
     # Check if running in API mode or pipeline mode
     import sys

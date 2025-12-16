@@ -10,7 +10,7 @@ const Chatbot = () => {
   const [conversationId, setConversationId] = useState(null);
   const messagesEndRef = useRef(null);
 
-  const API_BASE_URL = 'http://localhost:8000/api';
+  const API_BASE_URL = 'https://shsarfaraz.pythonanywhere.com/api';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
