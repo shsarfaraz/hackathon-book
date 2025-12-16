@@ -1,0 +1,30 @@
+{
+  "name": "hackathon-backend",
+  "build": {
+    "builder": "dockerfile",
+    "dockerfile": "Dockerfile"
+  },
+  "deploy": {
+    "startCommand": "uvicorn server:app --host 0.0.0.0 --port $PORT",
+    "healthCheckPath": "/health"
+  },
+  "env": {
+    "QDRANT_API_KEY": {
+      "required": true,
+      "description": "API key for Qdrant vector database"
+    },
+    "QDRANT_URL": {
+      "required": true,
+      "description": "URL for Qdrant vector database"
+    },
+    "COHERE_API_KEY": {
+      "required": true,
+      "description": "API key for Cohere AI service"
+    },
+    "TARGET_URL": {
+      "required": false,
+      "default": "https://hackathon-book-sigma.vercel.app/",
+      "description": "Target URL to crawl for the embedding pipeline"
+    }
+  }
+}

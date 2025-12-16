@@ -135,7 +135,13 @@
       "Bash(powershell \"Stop-Process -Id 13136 -Force\")",
       "Bash(taskkill /PID 10968 /F)",
       "Bash(powershell \"Stop-Process -Id 10968 -Force\")",
-      "Bash(curl -X POST http://localhost:8000/api/chat -H \"Content-Type: application/json\" -d \"{\"\"message\"\":\"\"What is Gazebo?\"\"}\")"
+      "Bash(curl -X POST http://localhost:8000/api/chat -H \"Content-Type: application/json\" -d \"{\"\"message\"\":\"\"What is Gazebo?\"\"}\")",
+      "Bash(dir *.json)",
+      "Bash(dir src)",
+      "Bash(dir srcapi)",
+      "Bash(dir \"src\\api\")",
+      "Bash(dir \"src\\scripts\")",
+      "Bash(dir uvicorn)"
     ]
   }
 }
