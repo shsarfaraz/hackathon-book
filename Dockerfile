@@ -15,8 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application code
 COPY book/my-book/backend/server.py .
 
-# Expose the port (Railway will set PORT environment variable)
-EXPOSE $PORT
+# Expose port 8000 (will be mapped to Railway's PORT environment variable)
+EXPOSE 8000
 
 # Run the application using uvicorn for production
 CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port $PORT"]
