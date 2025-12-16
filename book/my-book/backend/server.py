@@ -918,6 +918,10 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Add these additional settings for proper CORS handling
+    allow_origin_regex=".*",
+    # Add exposed headers for debugging
+    expose_headers=["Access-Control-Allow-Origin"]
 )
 
 # Initialize clients for RAG functionality
