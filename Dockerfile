@@ -18,5 +18,5 @@ COPY book/my-book/backend/server.py .
 # Expose port 8000 (will be mapped to Railway's PORT environment variable)
 EXPOSE 8000
 
-# Run the application using uvicorn for production
-CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port $PORT"]
+# Run the application using uvicorn for production - using python -m uvicorn
+CMD ["sh", "-c", "python -m uvicorn server:app --host 0.0.0.0 --port $PORT"]
