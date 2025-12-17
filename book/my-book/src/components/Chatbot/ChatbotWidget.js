@@ -46,23 +46,74 @@ const ChatbotWidget = ({
     if (onToggle) onToggle();
   };
 
-  // Function to search bookIndex (client-side)
+  /**
+   * Search function for book content with improved token-based relevance scoring
+   *
+   * This function implements a more sophisticated search algorithm that:
+   * 1. Tokenizes the user query into individual words
+   * 2. Calculates relevance scores based on matches in chapter (weight: 3), title (weight: 2), and content (weight: 1)
+   * 3. Sorts results by relevance score in descending order
+   * 4. Returns the top 3 most relevant results
+   *
+   * @param {string} query - The user's search query
+   * @returns {string} - Formatted search results or fallback message if no matches found
+   */
   const searchBook = (query) => {
     if (!bookIndex || bookIndex.length === 0) {
       return "Sorry, the book content is not available for searching right now.";
     }
 
-    query = query.toLowerCase();
-    const results = bookIndex.filter(
-      item =>
-        item.chapter.toLowerCase().includes(query) ||
-        item.title.toLowerCase().includes(query) ||
-        item.content.toLowerCase().includes(query)
-    );
+    // Tokenize the query into individual words
+    const queryTokens = query.toLowerCase().split(/\s+/).filter(token => token.length > 0);
+
+    if (queryTokens.length === 0) {
+      return "Please enter a query to search the book content.";
+    }
+
+    // Calculate relevance scores for each book entry
+    const scoredResults = bookIndex.map(entry => {
+      let score = 0;
+      const matchedTokens = [];
+
+      // Score based on matches in chapter, title, and content with different weights
+      queryTokens.forEach(token => {
+        // Higher weight (3x) for chapter matches - most relevant
+        if (entry.chapter.toLowerCase().includes(token)) {
+          score += 3;
+          matchedTokens.push(token);
+        }
+
+        // Medium weight (2x) for title matches - very relevant
+        if (entry.title.toLowerCase().includes(token)) {
+          score += 2;
+          matchedTokens.push(token);
+        }
+
+        // Lower weight (1x) for content matches - relevant but less specific
+        if (entry.content.toLowerCase().includes(token)) {
+          score += 1;
+          matchedTokens.push(token);
+        }
+      });
+
+      return {
+        entry,
+        score,
+        matchedTokens: [...new Set(matchedTokens)] // Remove duplicates
+      };
+    });
+
+    // Filter to only entries with matches and sort by score (descending)
+    const results = scoredResults
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score);
+
     if (results.length > 0) {
-      // Return the most relevant results (first 3)
-      const relevantResults = results.slice(0, 3);
-      return relevantResults.map(item => `${item.chapter}: ${item.title}. ${item.content}`).join('\n\n');
+      // Return the top 3 results with proper formatting
+      const topResults = results.slice(0, 3);
+      return topResults.map(item =>
+        `${item.entry.chapter}: ${item.entry.title}. ${item.entry.content}`
+      ).join('\n\n');
     } else {
       return "Sorry, I couldn't find anything related to your question in the book. Try asking about ROS, Gazebo, Isaac Sim, or Humanoid Robotics.";
     }
