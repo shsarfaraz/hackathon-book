@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import styles from './ChatbotWidget.module.css';
 
+// Check if bookIndex is available (for client-side functionality)
+let bookIndex = [];
+try {
+  // Try to import book data for client-side search
+  bookIndex = require('../../data/bookIndex.json');
+} catch (e) {
+  // bookIndex not available, will use backend in dev mode
+  console.warn('Book index not available, will use backend in development mode');
+}
+
 /**
  * Floating chatbot widget component
  * @param {Object} props - Component properties
@@ -15,65 +25,107 @@ const ChatbotWidget = ({
   isOpen = false,
   onToggle
 }) => {
-  const [isVisible, setIsVisible] = useState(true); // Always visible since we're using Root.js
-  const [isMinimized, setIsMinimized] = useState(false); // Start in open state to show chat interface
+  const [isVisible, setIsVisible] = useState(true);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState([{ text: "Welcome! How can I help you today?", sender: "bot" }]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Since we're using Root.js, widget should always be visible
+  // Determine if we're running in production (Vercel) or development (local)
+  const isProduction = typeof window !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    !window.location.hostname.includes('127.0.0.1') &&
+    !window.location.hostname.includes('0.0.0.0');
+
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
-  // Toggle widget state
   const toggleWidget = () => {
     setIsMinimized(!isMinimized);
-    if (onToggle) {
-      onToggle();
+    if (onToggle) onToggle();
+  };
+
+  // Function to search bookIndex (client-side)
+  const searchBook = (query) => {
+    if (!bookIndex || bookIndex.length === 0) {
+      return "Sorry, the book content is not available for searching right now.";
+    }
+
+    query = query.toLowerCase();
+    const results = bookIndex.filter(
+      item =>
+        item.chapter.toLowerCase().includes(query) ||
+        item.title.toLowerCase().includes(query) ||
+        item.content.toLowerCase().includes(query)
+    );
+    if (results.length > 0) {
+      // Return the most relevant results (first 3)
+      const relevantResults = results.slice(0, 3);
+      return relevantResults.map(item => `${item.chapter}: ${item.title}. ${item.content}`).join('\n\n');
+    } else {
+      return "Sorry, I couldn't find anything related to your question in the book. Try asking about ROS, Gazebo, Isaac Sim, or Humanoid Robotics.";
     }
   };
 
-  // Function to send message to backend
+  // Function to send message to backend API (for development)
+  const sendToBackend = async (message) => {
+    const response = await fetch('http://localhost:8000/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message: message }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.response_text || data.response || "I found some information about that in the book.";
+    } else {
+      return "Sorry, I couldn't process your request through the backend.";
+    }
+  };
+
+  // Send message handler - chooses between backend (dev) and client-side (production)
   const sendMessage = async (message) => {
     if (!message.trim() || isLoading) return;
 
     setIsLoading(true);
-
-    // Add user message to chat
     const userMessage = { text: message, sender: "user" };
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      // Call backend API
-      // const response = await fetch('http://localhost:8000/api/chat', {
-      const response = await fetch('https://shsarfaraz.pythonanywhere.com/api/chat', {
+      let responseText;
 
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: message }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const botMessage = { text: data.response_text || data.response || "I'm not sure how to respond to that.", sender: "bot" };
-        setMessages(prev => [...prev, botMessage]);
+      if (isProduction) {
+        // In production (Vercel), use client-side search
+        responseText = searchBook(message);
       } else {
-        const errorMessage = { text: "Sorry, I couldn't process your request. Please try again.", sender: "bot" };
-        setMessages(prev => [...prev, errorMessage]);
+        // In development (localhost), try backend first, fallback to client-side
+        try {
+          responseText = await sendToBackend(message);
+        } catch (backendError) {
+          console.warn('Backend unavailable, falling back to client-side search:', backendError);
+          responseText = searchBook(message);
+        }
       }
+
+      const botMessage = { text: responseText, sender: "bot" };
+      setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
-      const errorMessage = { text: "Connection error. Please make sure the backend server is running.", sender: "bot" };
+      const errorMessage = {
+        text: isProduction
+          ? "I encountered an issue while searching the book content. Please try rephrasing your question."
+          : "Connection error with backend. Make sure the server is running or check client-side content.",
+        sender: "bot"
+      };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle send button click
   const handleSend = () => {
     if (inputValue.trim()) {
       sendMessage(inputValue);
@@ -81,7 +133,6 @@ const ChatbotWidget = ({
     }
   };
 
-  // Handle Enter key press
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -89,10 +140,7 @@ const ChatbotWidget = ({
     }
   };
 
-  // If not on the right page, don't render
-  if (!isVisible) {
-    return null;
-  }
+  if (!isVisible) return null;
 
   return (
     <div className={`${styles['chatbot-widget']} ${styles['chatbot-widget--fixed']} ${isMinimized ? styles['chatbot-widget--minimized'] : styles['chatbot-widget--open']}`}>
@@ -106,7 +154,7 @@ const ChatbotWidget = ({
       {!isMinimized && (
         <div className={styles['chatbot-widget__content']}>
           <div className={styles['chatbot-widget__header']}>
-            <h3>Chatbot</h3>
+            <h3>{isProduction ? "Book Assistant" : "Chatbot"}</h3>
           </div>
           <div className={styles['chatbot-widget__body']}>
             <div className={styles['chat-messages']}>
@@ -120,7 +168,7 @@ const ChatbotWidget = ({
               ))}
               {isLoading && (
                 <div className={styles['message'] + ' ' + styles['bot']}>
-                  <em>Thinking...</em>
+                  <em>{isProduction ? "Searching book content..." : "Thinking..."}</em>
                 </div>
               )}
             </div>
@@ -128,7 +176,7 @@ const ChatbotWidget = ({
               <input
                 type="text"
                 className={styles['chat-input']}
-                placeholder="Ask about the book..."
+                placeholder={isProduction ? "Ask about the book content..." : "Ask about the book..."}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -139,7 +187,7 @@ const ChatbotWidget = ({
                 onClick={handleSend}
                 disabled={isLoading}
               >
-                {isLoading ? 'Sending...' : 'Send'}
+                {isLoading ? (isProduction ? 'Searching...' : 'Sending...') : 'Send'}
               </button>
             </div>
           </div>

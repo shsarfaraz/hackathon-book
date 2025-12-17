@@ -141,7 +141,10 @@
       "Bash(dir srcapi)",
       "Bash(dir \"src\\api\")",
       "Bash(dir \"src\\scripts\")",
-      "Bash(dir uvicorn)"
+      "Bash(dir uvicorn)",
+      "Bash(node -c src/components/Chatbot/ChatbotWidget.js)",
+      "Bash(npx docusaurus start:*)",
+      "Bash(npm run build)"
     ]
   }
 }

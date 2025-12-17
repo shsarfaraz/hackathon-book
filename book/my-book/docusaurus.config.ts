@@ -35,18 +35,6 @@ const config: Config = {
           editUrl:
             'https://github.com/your-org/my-book/edit/main/',
         },
-        blog: {
-          showReadingTime: true,
-          feedOptions: {
-            type: ['rss', 'atom'],
-            xslt: true,
-          },
-          editUrl:
-            'https://github.com/your-org/my-book/edit/main/blog/',
-          onInlineTags: 'warn',
-          onInlineAuthors: 'warn',
-          onUntruncatedBlogPosts: 'warn',
-        },
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -72,7 +60,6 @@ const config: Config = {
           position: 'left',
           label: 'Course Modules',
         },
-        { to: '/blog', label: 'Blog', position: 'left' },
         {
           href: 'https://github.com/your-org/my-book',
           label: 'GitHub',
@@ -112,10 +99,6 @@ const config: Config = {
         {
           title: 'More',
           items: [
-            {
-              label: 'Blog',
-              to: '/blog',
-            },
             {
               label: 'GitHub',
               href: 'https://github.com/your-org/my-book',
